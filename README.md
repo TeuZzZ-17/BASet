@@ -1,12 +1,11 @@
 # BASet
 
-<img width="643" height="427" alt="Screenshot 2026-06-20 003542" src="https://github.com/user-attachments/assets/f5933c88-5953-4757-bfd3-cef38902b468" />
-
-
 Microsoft Urban Assault SET.BAS Extractor - Converter
 This is a read-only tool for exploring and extracting data from *Urban Assault* / *OpenUA* `SET.BAS` files.
 
 The project is intended to support preservation, research, and future modding tools by making the contents of `SET.BAS` files easier to inspect.
+
+<img width="643" height="427" alt="Screenshot 2026-06-20 003542" src="https://github.com/user-attachments/assets/f5933c88-5953-4757-bfd3-cef38902b468" />
 
 ## Purpose
 
