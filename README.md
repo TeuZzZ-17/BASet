@@ -51,6 +51,6 @@ Users must provide their own legally obtained game files.
 
 ## License
 
-This project is released under the MIT License.
+This project is released under the GPL-3.0 license.
 
 See `LICENSE` for details.
