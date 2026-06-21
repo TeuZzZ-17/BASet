@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Dict, Iterable, List, Optional, Tuple
 
+import base_kids_export
+
 
 ASCII_TAG = re.compile(rb"^[\x20-\x7e]{4}$")
 DEFAULT_CLASS = "ilbm.class"
@@ -439,6 +441,23 @@ def extract(args: argparse.Namespace) -> int:
         if manifest_csv is not None:
             write_manifest_csv(manifest_csv, rows)
             print(f"wrote {manifest_csv}")
+        if getattr(args, "export_base_kids_raw", True):
+            try:
+                base_kids_summary = base_kids_export.write_raw_base_kids(
+                    source,
+                    raw_root / "BASE_KIDS",
+                )
+            except (base_kids_export.ExportError, OSError) as exc:
+                print(f"error: BASE/KIDS raw export failed: {exc}", file=sys.stderr)
+                return 1
+
+            print("BASE/KIDS raw export:")
+            print(f"  raw manifest: {base_kids_summary['raw_manifest_path']}")
+            print(f"  KIDS forms exported: {base_kids_summary['kids_forms_exported']}")
+            print(f"  OBJT forms exported: {base_kids_summary['objt_forms_exported']}")
+            for tag in ("CLID", "NAME", "NAM2", "STRC", "ATTS", "OLPL", "OTL2"):
+                count = base_kids_summary["leaf_chunks_exported"].get(tag, 0)
+                print(f"  {tag} chunks exported: {count}")
 
     print_summary(len(records), extracted_count, skipped_by_class, payload_counts, duplicate_count, errors, warnings)
     return 1 if errors else 0

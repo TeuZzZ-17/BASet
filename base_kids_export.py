@@ -345,7 +345,7 @@ class BaseKidsExporter:
 
 
 class RawBaseKidsExporter:
-    def __init__(self, data: bytes, root: Chunk, out_dir: Path, export_leaf_chunks: bool = False) -> None:
+    def __init__(self, data: bytes, root: Chunk, out_dir: Path, export_leaf_chunks: bool = True) -> None:
         self.data = data
         self.root = root
         self.out_dir = out_dir
@@ -499,7 +499,7 @@ def build_unresolved_lines(references: Dict[str, object], emrs_names_by_class: D
     return lines
 
 
-def write_raw_base_kids(setbas: Path, out_dir: Path, export_leaf_chunks: bool = False) -> Dict[str, object]:
+def write_raw_base_kids(setbas: Path, out_dir: Path, export_leaf_chunks: bool = True) -> Dict[str, object]:
     data, root = load_setbas(setbas)
     exporter = RawBaseKidsExporter(data, root, out_dir, export_leaf_chunks=export_leaf_chunks)
     return exporter.export()

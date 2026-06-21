@@ -25,6 +25,24 @@ BASet currently focuses on:
 
 The tool is still evolving, so specific workflows, output folders, and supported formats may change over time.
 
+## Extract output
+
+The main Extract workflow writes `manifest.json` and raw data folders:
+
+```text
+raw/
+  VBMP/
+  SKLT/
+  ANM/
+  BASE_KIDS/
+```
+
+`VBMP`, `SKLT`, and `ANM` contain embedded EMRS asset payloads.
+
+`BASE_KIDS` preserves raw BASE/KIDS structural scene graph data, including top-level `FORM KIDS`, immediate `FORM OBJT` children, and important structural leaf chunks such as `CLID`, `NAME`, `NAM2`, `STRC`, `ATTS`, `OLPL`, and `OTL2`.
+
+`ATTS`, `OLPL`, `OTL2`, and `STRC` are preserved as binary chunks for later analysis; BASet does not decode them deeply yet.
+
 ## Read-only design
 
 BASet is designed to be read-only.

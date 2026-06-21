@@ -63,8 +63,6 @@ class SetBasToolGUI:
 
         self.setbas_var = tk.StringVar()
         self.raw_out_var = tk.StringVar()
-        self.export_leaf_chunks_var = tk.BooleanVar(value=False)
-
         self._setup_style()
         self._build_ui()
 
@@ -102,16 +100,6 @@ class SetBasToolGUI:
 
         self._field(frame, 0, "SET.BAS input path", self.setbas_var, self.browse_setbas, "Browse File")
         self._field(frame, 1, "Extraction output folder", self.raw_out_var, self.browse_raw_out, "Browse Folder")
-
-        options = ttk.Frame(frame)
-        options.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(2, 4))
-        ttk.Checkbutton(
-            options,
-            text="Developer: export BASE/KIDS leaf chunks (slow, many small files)",
-            variable=self.export_leaf_chunks_var,
-            command=self.on_leaf_chunks_toggle,
-        ).pack(side="left")
-        ttk.Button(options, text="Info", command=self.show_leaf_chunks_info).pack(side="left", padx=(8, 0))
 
         buttons = ttk.Frame(frame)
         buttons.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 6))
@@ -172,29 +160,6 @@ class SetBasToolGUI:
     def show_error(self, message: str) -> None:
         self.log("[ERROR] " + message)
         messagebox.showerror(TITLE, message)
-
-    def leaf_chunks_warning_text(self) -> str:
-        return (
-            "This developer option exports CLID/NAME/NAM2/STRC/ATTS/OLPL/OTL2 "
-            "as thousands of tiny files inside raw\\BASE_KIDS\\chunks.\n\n"
-            "It is useful for reverse engineering and SKLtron research, but it can make "
-            "Extract much slower and Windows Explorer may become sluggish.\n\n"
-            "Leave it disabled for normal BASet extraction."
-        )
-
-    def show_leaf_chunks_info(self) -> None:
-        messagebox.showinfo(TITLE, self.leaf_chunks_warning_text())
-
-    def on_leaf_chunks_toggle(self) -> None:
-        if not self.export_leaf_chunks_var.get():
-            self.log("[OPTIONS] BASE/KIDS leaf chunk dump disabled")
-            return
-        proceed = messagebox.askyesno(TITLE, self.leaf_chunks_warning_text() + "\n\nEnable it anyway?")
-        if not proceed:
-            self.export_leaf_chunks_var.set(False)
-            self.log("[OPTIONS] BASE/KIDS leaf chunk dump left disabled")
-            return
-        self.log("[OPTIONS] BASE/KIDS leaf chunk dump enabled: Extract will be slower")
 
     def browse_setbas(self) -> None:
         path = filedialog.askopenfilename(title="Select SET.BAS", filetypes=[("SET.BAS", "*.BAS *.bas"), ("All files", "*.*")])
@@ -265,6 +230,7 @@ class SetBasToolGUI:
             all_classes=all_classes,
             manifest_json="manifest.json",
             manifest_csv="",
+            export_base_kids_raw=False,
             dry_run=False,
             verbose=False,
         )
@@ -276,17 +242,12 @@ class SetBasToolGUI:
 
         if result == 0:
             self.remove_text_manifest(raw_out)
-            export_leaf_chunks = self.export_leaf_chunks_var.get()
             self.log("[EXTRACT] BASE/KIDS raw export started")
-            if export_leaf_chunks:
-                self.log("[EXTRACT] BASE/KIDS leaf chunk dump: enabled, this may be slow")
-            else:
-                self.log("[EXTRACT] BASE/KIDS leaf chunk dump: disabled, compact output")
+            self.log("[EXTRACT] BASE/KIDS leaf chunks: CLID/NAME/NAM2/STRC/ATTS/OLPL/OTL2")
             try:
                 base_kids_summary = base_kids_export.write_raw_base_kids(
                     setbas,
                     raw_out / "raw" / "BASE_KIDS",
-                    export_leaf_chunks=export_leaf_chunks,
                 )
             except (base_kids_export.ExportError, OSError) as exc:
                 self.log(f"[ERROR] BASE/KIDS raw export failed: {exc}")
@@ -295,12 +256,9 @@ class SetBasToolGUI:
             self.log(f"[EXTRACT] BASE/KIDS raw manifest: {base_kids_summary['raw_manifest_path']}")
             self.log(f"[EXTRACT] KIDS forms exported: {base_kids_summary['kids_forms_exported']}")
             self.log(f"[EXTRACT] OBJT forms exported: {base_kids_summary['objt_forms_exported']}")
-            if base_kids_summary.get("leaf_chunk_files_enabled"):
-                for tag in ("CLID", "NAME", "NAM2", "STRC", "ATTS", "OLPL", "OTL2"):
-                    count = base_kids_summary["leaf_chunks_exported"].get(tag, 0)
-                    self.log(f"[EXTRACT] {tag} chunks exported: {count}")
-            else:
-                self.log("[EXTRACT] Leaf chunk files skipped by GUI option")
+            for tag in ("CLID", "NAME", "NAM2", "STRC", "ATTS", "OLPL", "OTL2"):
+                count = base_kids_summary["leaf_chunks_exported"].get(tag, 0)
+                self.log(f"[EXTRACT] {tag} chunks exported: {count}")
             self.log(f"[EXTRACT] BASE/KIDS warnings/errors: {base_kids_summary['warning_count']}/0")
             self.log(f"[EXTRACT] manifest.json: {raw_out / 'manifest.json'}")
             self.log(f"[EXTRACT] raw output: {raw_out / 'raw'}")
