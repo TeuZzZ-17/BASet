@@ -20,6 +20,7 @@ BASet currently focuses on:
 - Extracting embedded data from `SET.BAS`
 - Exporting selected raw resources
 - Converting supported texture formats
+- Manually converting individual ILBM/ILB textures to PNG for OpenUA loose texture overrides
 - Exporting structural metadata for research and tooling
 - Providing optional developer-oriented raw dumps for deeper analysis
 
@@ -62,6 +63,35 @@ raw/
 `BASE_KIDS` preserves raw BASE/KIDS structural scene graph data, including top-level `FORM KIDS`, immediate `FORM OBJT` children, and important structural leaf chunks such as `CLID`, `NAME`, `NAM2`, `STRC`, `ATTS`, `OLPL`, and `OTL2`.
 
 `ATTS`, `OLPL`, `OTL2`, and `STRC` are preserved as binary chunks for later analysis; BASet does not decode them deeply yet.
+
+
+## Manual ILBM to PNG conversion
+
+BASet can also convert selected `ILBM` / `ILB` textures directly to compatible `PNG` files.
+
+Use this when you already have loose Urban Assault textures such as `BODEN2.ILBM`, `MTL.ILBM`, `AIR1TXT.ILBM`, `Fx1.ILBM`, or `Fx2.ILBM` and you want PNG files that can be edited in external tools or copied into an OpenUA `Data/SetN/Loose/` or `Data/SetN/Hi/.../` folder.
+
+In the GUI, press:
+
+```text
+Manual ILBM to PNG
+```
+
+Then select one texture, or multi-select several textures.
+
+- If one file is selected, BASet asks for the exact output PNG path.
+- If multiple files are selected, BASet asks for one output folder and writes one `.PNG` per selected ILBM using the original basename.
+- After a successful manual conversion, BASet asks whether to open the output folder.
+
+The `Open Output Folder` button is placed near the output-folder selector and opens the currently selected extraction/output folder.
+
+From the command line:
+
+```bash
+python ilbm_to_png.py BODEN2.ILBM --out BODEN2.PNG
+```
+
+The converter reads the ILBM `BMHD`, `CMAP`, and `BODY` chunks, supports normal uncompressed and ByteRun1-compressed 1-8 bitplane ILBM textures, and preserves the original palette when possible. Masked or transparent ILBM images are written as PNG with alpha.
 
 ## Read-only design
 

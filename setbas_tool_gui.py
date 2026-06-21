@@ -17,6 +17,7 @@ import vbmp_to_png
 import vbmp_to_ilbm
 import base_kids_export
 import png_to_ilbm
+import ilbm_to_png
 
 
 TITLE = "BASet - Urban Assault SET.BAS Tool"
@@ -105,7 +106,12 @@ class SetBasToolGUI:
             frame,
             text="Export full raw BASE/KIDS chunks (slow, developer mode)",
             variable=self.export_base_kids_raw_var,
-        ).grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 2))
+        ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(4, 2))
+        ttk.Button(
+            frame,
+            text="Open Output Folder",
+            command=lambda: self.open_folder(self.raw_out_var.get()),
+        ).grid(row=2, column=2, sticky="ew", pady=(4, 2))
 
         buttons = ttk.Frame(frame)
         buttons.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 6))
@@ -118,7 +124,7 @@ class SetBasToolGUI:
 
         buttons2 = ttk.Frame(frame)
         buttons2.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(6, 0))
-        ttk.Button(buttons2, text="Open Output Folder", command=lambda: self.open_folder(self.raw_out_var.get())).pack(side="left", padx=(0, 5))
+        ttk.Button(buttons2, text="Manual ILBM to PNG", command=self.manual_ilbm_to_png, style="Accent.TButton").pack(side="left", padx=(0, 5))
         ttk.Button(buttons2, text="Clear Log", command=self.clear_log).pack(side="left", padx=5)
 
         self.log_text = scrolledtext.ScrolledText(frame, height=20, wrap="word", state="disabled")
@@ -404,6 +410,101 @@ class SetBasToolGUI:
     def convert_extracted(self) -> None:
         if self.run_convert():
             messagebox.showinfo(TITLE, "Texture PNG conversion complete.")
+
+    def manual_ilbm_to_png(self) -> None:
+        ilbm_path_texts = filedialog.askopenfilenames(
+            title="Select one or more ILBM textures to convert to PNG",
+            filetypes=[
+                ("ILBM texture files", "*.ILBM *.ilbm *.ILB *.ilb *.IFF *.iff *.LBM *.lbm"),
+                ("All files", "*.*"),
+            ],
+        )
+        if not ilbm_path_texts:
+            return
+
+        ilbm_paths = [Path(path_text) for path_text in ilbm_path_texts]
+        raw_out_text = self.raw_out_var.get().strip()
+        if raw_out_text:
+            initial_dir = Path(raw_out_text) / "manual_png"
+        else:
+            initial_dir = ilbm_paths[0].parent
+        initial_dir.mkdir(parents=True, exist_ok=True)
+
+        if len(ilbm_paths) == 1:
+            out_path_text = filedialog.asksaveasfilename(
+                title="Save compatible PNG texture",
+                initialdir=str(initial_dir),
+                initialfile=ilbm_paths[0].with_suffix(".PNG").name,
+                defaultextension=".PNG",
+                filetypes=[("PNG image", "*.PNG *.png"), ("All files", "*.*")],
+            )
+            if not out_path_text:
+                return
+            output_pairs = [(ilbm_paths[0], Path(out_path_text))]
+            output_summary = Path(out_path_text).parent
+        else:
+            out_dir_text = filedialog.askdirectory(
+                title="Select output folder for compatible PNG textures",
+                initialdir=str(initial_dir),
+            )
+            if not out_dir_text:
+                return
+            out_dir = Path(out_dir_text)
+            output_pairs = [(ilbm_path, out_dir / ilbm_path.with_suffix(".PNG").name) for ilbm_path in ilbm_paths]
+            output_summary = out_dir
+
+        self.log("[ILBM->PNG] Starting manual conversion")
+        self.log(f"[ILBM->PNG] Selected files: {len(output_pairs)}")
+        self.log(f"[ILBM->PNG] Output folder: {output_summary}")
+
+        try:
+            image_module = ilbm_to_png.load_pillow_image()
+        except ilbm_to_png.IlbmToPngError as exc:
+            message = str(exc)
+            if "Pillow" in message:
+                message = PILLOW_HELP
+            self.show_error(message)
+            return
+
+        converted = 0
+        skipped = 0
+        errors = 0
+        for ilbm_path, out_path in output_pairs:
+            self.log(f"[ILBM->PNG] Input: {ilbm_path}")
+            self.log(f"[ILBM->PNG] Output: {out_path}")
+            try:
+                ilbm = ilbm_to_png.convert_ilbm_to_png(ilbm_path, out_path, image_module)
+            except ilbm_to_png.IlbmToPngError as exc:
+                skipped += 1
+                self.log(f"[ILBM->PNG SKIP] {ilbm_path}: {exc}")
+                continue
+            except OSError as exc:
+                errors += 1
+                self.log(f"[ILBM->PNG ERROR] {ilbm_path}: {exc}")
+                continue
+
+            converted += 1
+            self.log(
+                f"[ILBM->PNG OK] {ilbm_path} -> {out_path} "
+                f"({ilbm.width}x{ilbm.height}, {ilbm.planes} planes, compression={ilbm.compression})"
+            )
+
+        self.log("[ILBM->PNG] Summary:")
+        self.log(f"[ILBM->PNG] converted count: {converted}")
+        self.log(f"[ILBM->PNG] skipped count: {skipped}")
+        self.log(f"[ILBM->PNG] error count: {errors}")
+
+        if converted:
+            self.log("[OK] Manual ILBM to PNG conversion complete")
+            if messagebox.askyesno(
+                TITLE,
+                f"Manual ILBM to PNG conversion complete. Converted: {converted}\n\n"
+                f"Open the output folder?\n{output_summary}",
+            ):
+                self.open_folder(str(output_summary))
+        else:
+            self.log("[ERROR] No ILBM files were converted")
+            messagebox.showwarning(TITLE, "No ILBM files were converted. See log for details.")
 
     def validate_png_to_ilbm_paths(self) -> Optional[Tuple[Path, Path, Path]]:
         raw_out_text = self.raw_out_var.get().strip()
