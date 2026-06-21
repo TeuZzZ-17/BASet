@@ -63,6 +63,7 @@ class SetBasToolGUI:
 
         self.setbas_var = tk.StringVar()
         self.raw_out_var = tk.StringVar()
+        self.export_base_kids_raw_var = tk.BooleanVar(value=False)
         self._setup_style()
         self._build_ui()
 
@@ -100,6 +101,11 @@ class SetBasToolGUI:
 
         self._field(frame, 0, "SET.BAS input path", self.setbas_var, self.browse_setbas, "Browse File")
         self._field(frame, 1, "Extraction output folder", self.raw_out_var, self.browse_raw_out, "Browse Folder")
+        ttk.Checkbutton(
+            frame,
+            text="Export full raw BASE/KIDS chunks (slow, developer mode)",
+            variable=self.export_base_kids_raw_var,
+        ).grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 2))
 
         buttons = ttk.Frame(frame)
         buttons.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 6))
@@ -230,7 +236,7 @@ class SetBasToolGUI:
             all_classes=all_classes,
             manifest_json="manifest.json",
             manifest_csv="",
-            export_base_kids_raw=False,
+            export_base_kids_raw=self.export_base_kids_raw_var.get(),
             dry_run=False,
             verbose=False,
         )
@@ -242,24 +248,12 @@ class SetBasToolGUI:
 
         if result == 0:
             self.remove_text_manifest(raw_out)
-            self.log("[EXTRACT] BASE/KIDS raw export started")
-            self.log("[EXTRACT] BASE/KIDS leaf chunks: CLID/NAME/NAM2/STRC/ATTS/OLPL/OTL2")
-            try:
-                base_kids_summary = base_kids_export.write_raw_base_kids(
-                    setbas,
-                    raw_out / "raw" / "BASE_KIDS",
-                )
-            except (base_kids_export.ExportError, OSError) as exc:
-                self.log(f"[ERROR] BASE/KIDS raw export failed: {exc}")
-                messagebox.showerror(TITLE, "BASE/KIDS raw export failed. See log for details.")
-                return False
-            self.log(f"[EXTRACT] BASE/KIDS raw manifest: {base_kids_summary['raw_manifest_path']}")
-            self.log(f"[EXTRACT] KIDS forms exported: {base_kids_summary['kids_forms_exported']}")
-            self.log(f"[EXTRACT] OBJT forms exported: {base_kids_summary['objt_forms_exported']}")
-            for tag in ("CLID", "NAME", "NAM2", "STRC", "ATTS", "OLPL", "OTL2"):
-                count = base_kids_summary["leaf_chunks_exported"].get(tag, 0)
-                self.log(f"[EXTRACT] {tag} chunks exported: {count}")
-            self.log(f"[EXTRACT] BASE/KIDS warnings/errors: {base_kids_summary['warning_count']}/0")
+            if self.export_base_kids_raw_var.get():
+                self.log("[EXTRACT] BASE/KIDS raw export enabled")
+                self.log("[EXTRACT] BASE/KIDS leaf chunks: CLID/NAME/NAM2/STRC/ATTS/OLPL/OTL2")
+                self.log(f"[EXTRACT] BASE/KIDS raw output: {raw_out / 'raw' / 'BASE_KIDS'}")
+            else:
+                self.log("[EXTRACT] BASE/KIDS raw export skipped (developer option unchecked)")
             self.log(f"[EXTRACT] manifest.json: {raw_out / 'manifest.json'}")
             self.log(f"[EXTRACT] raw output: {raw_out / 'raw'}")
             self.log("[OK] Extraction complete")

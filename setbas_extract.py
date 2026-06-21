@@ -441,7 +441,7 @@ def extract(args: argparse.Namespace) -> int:
         if manifest_csv is not None:
             write_manifest_csv(manifest_csv, rows)
             print(f"wrote {manifest_csv}")
-        if getattr(args, "export_base_kids_raw", True):
+        if getattr(args, "export_base_kids_raw", False):
             try:
                 base_kids_summary = base_kids_export.write_raw_base_kids(
                     source,
@@ -474,6 +474,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest-json", default="manifest.json", help="manifest JSON filename (default: manifest.json)")
     parser.add_argument("--manifest-csv", default="", help="optional manifest CSV filename (disabled by default)")
     parser.add_argument("--dry-run", action="store_true", help="parse and report without writing payload files or manifests")
+    parser.add_argument(
+        "--export-base-kids-raw",
+        action="store_true",
+        help="also export full raw BASE/KIDS chunks into raw/BASE_KIDS (slow developer mode)",
+    )
     parser.add_argument("--verbose", action="store_true", help="print each extracted resource")
     return parser
 

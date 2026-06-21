@@ -27,17 +27,37 @@ The tool is still evolving, so specific workflows, output folders, and supported
 
 ## Extract output
 
-The main Extract workflow writes `manifest.json` and raw data folders:
+The normal Extract workflow is fast by default. It writes `manifest.json` and the standard raw EMRS asset folders:
 
 ```text
 raw/
   VBMP/
   SKLT/
   ANM/
-  BASE_KIDS/
 ```
 
 `VBMP`, `SKLT`, and `ANM` contain embedded EMRS asset payloads.
+
+The full raw BASE/KIDS dump is optional because it can create tens of thousands of small files and can be slow on Windows. Enable it only when you need developer/reverse-engineering data.
+
+In the GUI, enable:
+
+```text
+Export full raw BASE/KIDS chunks (slow, developer mode)
+```
+
+In the CLI, use:
+
+```bash
+python setbas_extract.py SET.BAS --out output_folder --all-classes --export-base-kids-raw
+```
+
+When enabled, BASet also writes:
+
+```text
+raw/
+  BASE_KIDS/
+```
 
 `BASE_KIDS` preserves raw BASE/KIDS structural scene graph data, including top-level `FORM KIDS`, immediate `FORM OBJT` children, and important structural leaf chunks such as `CLID`, `NAME`, `NAM2`, `STRC`, `ATTS`, `OLPL`, and `OTL2`.
 
